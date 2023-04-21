@@ -1,15 +1,22 @@
 const mongoose = require("mongoose");
 
 const postSchema = new mongoose.Schema({
-  
-  userId: {
-    type: String,
+  postId: {
+    type: mongoose.Schema.Types.ObjectId, 
     required: true,
+      
+    unique: true 
+    
   },
   title: {
     type: String,
     required: true
-  },  
+  },
+  userId: {
+    type: String,
+    required: true,
+    unique: true
+  },
   password: {
     type: String,
     required: true,

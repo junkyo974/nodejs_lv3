@@ -10,7 +10,7 @@ router.get("/:userId/comments", async (req, res) => {
         res.status(400).json({ messgae: "데이터 형식이 올바르지 않습니다." })
     }
 
-    const comments = await Comments.find({ userId }, { password: 0 }).sort({ Pdate: -1 });
+    const comments = await Comments.find({ userId }, { password: 0 }).sort({ createdAt: -1 });
     if (comments.length === 0) {
         res.status(400).json({ message: "댓글이 없습니다." });
     } else {
@@ -32,9 +32,9 @@ router.post("/:userId/comments", async (req, res) => {
             errorMessage: "댓글 내용을 입력해주세요 "
         })
     }
-    const Pdate = new Date()
+    const createdAt = new Date()
 
-    const createdComment = await Comments.create({ userId, password, comment, Pdate });
+    const createdComment = await Comments.create({ userId, password, comment, createdAt });
 
     res.status(200).json({ "message": "댓글을 생성하였습니다." });
 
