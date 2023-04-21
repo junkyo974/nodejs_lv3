@@ -24,9 +24,9 @@ router.post("/:userId/comments", async(req,res) => {
         errorMessage:"댓글 내용을 입력해주세요 "
     })
 }
-    const Pdate = new Date()
+    const createdAt = new Date()
 
-    const createdComment = await Comments.create({userId, comment, Pdate});
+    const createdComment = await Comments.create({userId, comment, createdAt});
 
     res.status(200).json({"message":"댓글을 생성하였습니다." });
   
@@ -39,12 +39,10 @@ router.put("/:userId/comments", async(req, res) => {
     const existsComments = await Comments.findOne({userId});
    if (existsComments === null) {
         return res.status(400).json({
-            success:false,
             errorMessage:"찾을 수 없는 글입니다. "
         })
     } else if (existsComments.length === 0){
         return res.status(400).json({
-            success:false,
             errorMessage:"댓글 내용을 입력해주세요 "
         })
     } else {

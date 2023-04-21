@@ -1,15 +1,15 @@
 const mongoose = require("mongoose");
 
 const postSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: true
-  },
+  
   userId: {
     type: String,
     required: true,
-    unique: true
   },
+  title: {
+    type: String,
+    required: true
+  },  
   password: {
     type: String,
     required: true,
@@ -18,7 +18,7 @@ const postSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  Pdate: {
+  createdAt: {
     type: Date,
     required: true,
     default: Date.now

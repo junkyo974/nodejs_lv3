@@ -8,7 +8,7 @@ connect();
 app.use(express.json());
 app.use("/", [indexRouter]); 
 
-app.get("/", (req, res) => {
+app.get("*", (req, res) => {
   res.send("잘못된 주소입니다. /posts를 추가해주세요.");
 });
 
