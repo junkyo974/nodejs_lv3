@@ -18,13 +18,12 @@ router.post("/:userId/comments", async(req,res) => {
   const {userId} = req.params;
   const {comment} = req.body;
   
-//   const existsComments = await Comments.find({userId});
-//   if (existsComments.length === 0){
-//     return res.status(400).json({
-//         success:false,
-//         errorMessage:"댓글 내용을 입력해주세요 "
-//     })
-// }
+  const postComments = await Comments.find({userId});
+  if (postComments.length === 0){
+    return res.status(400).json({
+        errorMessage:"댓글 내용을 입력해주세요 "
+    })
+}
     const Pdate = new Date()
 
     const createdComment = await Comments.create({userId, comment, Pdate});
