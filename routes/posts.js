@@ -53,24 +53,24 @@ router.post("/", async (req, res) => {
 router.put("/:userId", async(req, res) => {
     const {title, userId, password, content} = req.body;
 
-    const updatepost = await Posts.findOne({password});
-    if (updatepost.password !== password){
+    const updatePosts = await Posts.findOne({password});
+    if (updatePosts.password !== password){
         return res.status(400).json({
             message:"비밀번호가 일치하지 않습니다. "
         })
     } else if (!userId || !password || !content){
         res.status(400).json({ message: "데이터 형식이 올바르지 않습니다." });
         return;
-    } else if (!updatepost){
+    } else if (!updatePosts){
         res.status(404).json({message : "게시글이 존재하지 않습니다."})
     }
-    else {
-        await Posts.updateOne(
+    
+    await Posts.updateOne(
             {userId: userId},
             {password: password},
             {$set: {content:content}}
         )
-    }
+    
     res.status(200).json({"message":"게시글을 수정하였습니다."});
 });
 
