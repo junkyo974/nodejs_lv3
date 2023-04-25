@@ -13,7 +13,6 @@ connect();
 app.use(express.json());
 app.use(cookieParser());
 
-// '/' Test
 app.get('/', (req, res) => {
     res.send('/signup 회원가입, /login 로그인');
 });
