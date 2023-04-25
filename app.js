@@ -1,17 +1,27 @@
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const app = express();
 const port = 3000;
-const indexRouter = require("./routes/index.js");
-const connect = require("./schemas");
+
+const postsRouter = require('./routes/posts');
+const commentsRouter = require('./routes/comments');
+const usersRouter = require("./routes/users.js");
+
+const connect = require('./schemas');
 connect();
 
 app.use(express.json());
-app.use("/", [indexRouter]); 
+app.use(cookieParser());
 
-app.get("*", (req, res) => {
-  res.send("잘못된 주소입니다. /posts를 추가해주세요.");
+// '/' Test
+app.get('/', (req, res) => {
+    res.send('/ Test!!!');
 });
+
+app.use('/posts', [postsRouter, commentsRouter]);
+app.use('/', [usersRouter])
+
 
 app.listen(port, () => {
-  console.log(port, '포트로 서버가 열렸어요!');
-});
+    console.log(`${port} 포트로 서버가 열렸습니다.`)
+})

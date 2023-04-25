@@ -1,87 +1,136 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const Comments = require("../schemas/comment.js");
-const Posts = require("../schemas/post.js")
+const authMiddleware = require("../middlewares/auth-middleware.js");
+const Posts = require('../schemas/post.js');
+const Comments = require('../schemas/comment.js');
 
-router.get("/:userId/comments", async (req, res) => {
-    const { userId } = req.params;
+// const post = await (Posts.find()).sort("-createdAt"); 사용 시 MongoDB 내부 기능으로 mongoose 외 일반 배열에서는 동작 안 된다고 함
 
-    if (!userId) {
-        res.status(400).json({ messgae: "데이터 형식이 올바르지 않습니다." })
-    }
+// 댓글 생성 : POST -> localhost:3000/posts/:postId/comments
+router.post('/:postId/comments', authMiddleware, async (req, res) => {
+    try {
+        const { userId, nickname } = res.locals.user;
+        const { postId } = req.params;
 
-    const comments = await Comments.find({ userId }, { password: 0 }).sort({ createdAt: -1 });
-    if (comments.length === 0) {
-        res.status(400).json({ message: "댓글이 없습니다." });
-    } else {
-        res.status(200).json({ data: comments });
+        let comment;
+        if ((req.body.comment).length > 0) {
+            comment = req.body.comment;
+        } else if ((req.body.comment).length === 0){
+            return res.status(412).json({ errorMessage: "댓글 내용을 입력해주세요."}); 
+        } else {
+            return res.status(412).json({ errorMessage: "데이터 형식이 올바르지 않습니다."}); 
+        };
+
+        const existPost = await Posts.findOne({ _id: postId });
+        if (!existPost) {
+            return res.status(404).json({ errorMessage: '게시글이 존재하지 않습니다.' });
+        };
+
+        await Comments.create({ postId, userId, nickname, comment });
+        return res.status(201).json({ message: '댓글을 작성하였습니다.' })
+    } catch (err) {
+        console.error(err);
+        return res.status(400).send({ message: '댓글 작성에 실패하였습니다.' });
     }
 });
 
-router.post("/:userId/comments", async (req, res) => {
-    const { userId } = req.params;
-    const { password, comment } = req.body;
 
-    if (!userId || !password || !commnet) {
-        res.status(400).json({ message: "데이터 형식이 올바르지 않습니다." })
+// 댓글 조회 : GET -> localhost:3000/posts/:postId/comments
+router.get('/:postId/comments', async(req, res) => {
+    try {
+        const { postId } = req.params;
+        const comments = await Comments.find({ postId }).sort("-createdAt"); // 내림차순 방법 1
+        const results = comments.map((item)=>{
+            return {
+                commentId : item.commentId,
+                userId : item.userId,
+                nickname : item.nickname,
+                comment : item.comment,
+                createdAt : item.createdAt,
+                updatedAt : item.updatedAt
+            }
+        }).sort((a, b) => {
+            return b.createdAt.getTime() - a.createdAt.getTime();
+        });     // 내림차순 방법 2 
+        res.json({ "data" : results })
+    } catch (err) {
+        console.log(err);
+        res.status(400).send({ message: '데이터 형식이 올바르지 않습니다.' });
     }
-
-    const postComments = await Comments.find({ userId });
-    if (postComments.length === 0) {
-        return res.status(400).json({
-            errorMessage: "댓글 내용을 입력해주세요 "
-        })
-    }
-    const createdAt = new Date()
-
-    const createdComment = await Comments.create({ userId, password, comment, createdAt });
-
-    res.status(200).json({ "message": "댓글을 생성하였습니다." });
-
-});
-
-
-router.put("/:userId/comments", async (req, res) => {
-    const { userId, password, comment } = req.body;
-
-    if (!userId || !password || !comment) {
-        res.status(400).json({ message: "데이터 형식이 올바르지 않습니다." })
-    }
-
-    const updateComments = await Comments.findOne({ userId });
-    if (!updateComments) {
-        return res.status(404).json({
-            errorMessage: "댓글 조회에 실패했습니다."
-        })
-    } else if (updateComments.length === 0) {
-        return res.status(400).json({
-            errorMessage: "댓글 내용을 입력해주세요 "
-        })
-    }
-    await Comments.updateOne(
-        { userId: userId },
-        { password: password },
-        { $set: { comment: comment } }
-    )
-
-    res.status(200).json({ "message": "댓글을 수정하였습니다." });
-});
-
-router.delete("/:userId/comments", async (req, res) => {
-    const { userId, password } = req.body;
-
-    if (!userId, !password) {
-        res.status(400).json({ message: "데이터 형식이 올바르지 않습니다." })
-    }
-
-    const deleteComments = await Comments.find({ userId });
-    if (!deleteComments) {
-        return res.status(404).json({ errorMessage: "댓글 조회에 실패했습니다." })
-    } else if (deleteComments.length) {
-        await Comments.deleteOne({ userId });
-    }
-
-    res.json({ "message": "댓글을 삭제하였습니다." });
 })
+
+
+// 댓글 수정 : PUT -> localhost:3000/posts/:postId/comments/:commentId
+router.put('/:postId/comments/:commentId', authMiddleware, async(req, res) => {
+    try {
+        const { userId } = res.locals.user;
+        const { postId, commentId } = req.params;
+
+        const existPost = await Posts.findOne({_id: postId});
+        if (!existPost) {
+            return res.status(404).json({ errorMessage: '게시글이 존재하지 않습니다.' });
+        }
+        
+        const existComment = await Comments.findOne({ _id:commentId });
+        if (!existComment) {
+            return res.status(404).json({ errorMessage: '댓글이 존재하지 않습니다.' });
+        }
+
+        let comment;
+        if ((req.body.comment).length > 0) {
+            comment = req.body.comment;
+        } else {
+            return res.status(412).json({ errorMessage: "데이터 형식이 올바르지 않습니다."}); 
+        };
+
+        if (userId === existComment.userId) {
+            const updatedAt = new Date();
+            await Comments.updateOne({_id:commentId}, { $set: { comment, updatedAt }});
+            return res.status(201).json({ message: '댓글을 수정하였습니다.' });
+        } else {
+            return res.status(403).json({ errorMessage: '댓글의 수정 권한이 존재하지 않습니다.' });
+        }
+    } catch (err) {
+        console.log(err);
+        res.status(400).send({ message: '댓글 수정에 실패하였습니다.' });
+    }
+});
+
+
+// 댓글 삭제 : DELETE -> localhost:3000/posts/:postId/comments/:commentId
+router.delete('/:postId/comments/:commentId', authMiddleware, async(req, res) => {
+    try {
+        const { userId } = res.locals.user;
+        const { postId, commentId } = req.params;
+
+        const existPost = await Posts.findOne({_id: postId});
+        if (!existPost) {
+            return res.status(404).json({ errorMessage: '게시글이 존재하지 않습니다.' });
+        }
+        
+        const existComment = await Comments.findOne({ _id:commentId });
+        if (!existComment) {
+            return res.status(404).json({ errorMessage: '댓글이 존재하지 않습니다.' });
+        }
+
+        let comment;
+        if ((req.body.comment).length > 0) {
+            comment = req.body.comment;
+        } else {
+            return res.status(412).json({ errorMessage: "데이터 형식이 올바르지 않습니다."}); 
+        };
+
+        if (userId === existComment.userId) {
+            const updatedAt = new Date();
+            await Comments.deleteOne({_id:commentId});
+            return res.status(201).json({ message: '댓글을 삭제하였습니다.' });
+        } else {
+            return res.status(403).json({ errorMessage: '댓글의 삭제 권한이 존재하지 않습니다.' });
+        }
+    } catch (err) {
+        console.log(err);
+        res.status(400).send({ message: '댓글 삭제에 실패하였습니다.' });
+    }
+});
 
 module.exports = router;
