@@ -15,8 +15,14 @@ app.use(cookieParser());
 
 // '/' Test
 app.get('/', (req, res) => {
-    res.send('/ Test!!!');
+    res.send('/signup 회원가입, /login 로그인');
 });
+
+app.get('*', (req, res)=> {
+    res.res.status(400).json({
+        errorMessage: "잘못된 URL 입니다. /signup 회원가입, /login 로그인, /posts에서 게시글 조회가 가능합니다."
+     });
+})
 
 app.use('/posts', [postsRouter, commentsRouter]);
 app.use('/', [usersRouter])

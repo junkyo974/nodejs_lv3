@@ -4,7 +4,7 @@ const authMiddleware = require("../middlewares/auth-middleware.js");
 const Posts = require('../schemas/post.js');
 const Comments = require('../schemas/comment.js');
 
-// const post = await (Posts.find()).sort("-createdAt"); 사용 시 MongoDB 내부 기능으로 mongoose 외 일반 배열에서는 동작 안 된다고 함
+// const post = await (Posts.find()).sort("-createdAt"); 사용 시 MongoDB 내부 기능으로 mongoose 외 일반 배열에서는 동작 안 된다고 함 / .sort("-*"); 사용 시 간결하나 사용하는 db등에 따라 유연성이 떨어질 수 있을 것
 
 // 댓글 생성 : POST -> localhost:3000/posts/:postId/comments
 router.post('/:postId/comments', authMiddleware, async (req, res) => {
