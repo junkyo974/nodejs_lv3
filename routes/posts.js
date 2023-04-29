@@ -1,15 +1,21 @@
 const express = require('express');
+const { Op } = require("sequelize");
+const { Posts } = require("../models");
 const router = express.Router();
 const authMiddleware = require("../middlewares/auth-middleware.js");
-const Posts = require('../schemas/post.js');
+
 
 
 // 게시글 생성 : POST -> localhost:3000/posts
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/',authMiddleware, async (req, res) => {
     try {
         const { userId, nickname } = res.locals.user;
         const { title, content } = req.body;
-        await Posts.create({ userId, nickname, title, content });
+        await Posts.create({ 
+            userId,
+            nickname,
+            title,
+            content });
         return res.status(200).json({ message: '게시글 작성에 성공하였습니다.' })
     } catch {
         return res.status(400).json({ message: '데이터 형식이 올바르지 않습니다.' });
@@ -21,21 +27,15 @@ router.post('/', authMiddleware, async (req, res) => {
 // 게시글 조회 : GET -> localhost:3000/posts
 router.get('/', async (req, res) => {
     try {
-        const post = await (Posts.find()).sort("-createdAt");   // 내림차순 방법 1
-        // console.log(post);
-        const results = post.map((item) => {
-            return {
-                postId: item.postId,
-                userId: item.userId,
-                nickname: item.nickname,
-                title: item.title,
-                createdAt: item.createdAt,
-                updatedAt: item.updatedAt
-            };
-        }).sort((a, b) => {
+        const posts = await Posts.findAll({
+            attributes: ["postId", "title", "createdAt", "updatedAt"],
+            order: [['createdAt', 'DESC']],
+          });
+        
+        const results = posts.sort((a, b) => {
             return b.createdAt.getTime() - a.createdAt.getTime();
-        }); // 내림차순 방법 2 
-        // console.log(results);
+        });
+        
         res.json({ data: results });
     } catch (err) {
         console.error(err);
@@ -48,17 +48,12 @@ router.get('/', async (req, res) => {
 router.get('/:postId', async (req, res) => {
     try {
         const { postId } = req.params;
-        const post = await Posts.findOne({_id:postId});
-        const result = {
-            postId: post.postId,
-            userId: post.userId,
-            nickname: post.nickname,
-            title: post.title,
-            content: post.content,
-            createdAt: post.createdAt,
-            updatedAt: post.updatedAt
-        };
-        res.json({ data: result });
+        const post = await Posts.findOne({
+            attributes: ["postId", "title", "content", "createdAt", "updatedAt"],
+            where: { postId }
+          });
+        
+        res.json({ data: post });
     } catch (err) {
         console.error(err);
         res.status(400).send({ message: '게시글 조회에 실패하였습니다.' });
@@ -73,7 +68,7 @@ router.put('/:postId', authMiddleware, async (req, res) => {
         const { postId } = req.params;
         const { title, content } = req.body;
 
-        const [post] = await Posts.find({ _id: postId });
+        const post = await Posts.findOne({ where: { postId } });
         
         if (title.length===0) {
             return res.status(412).json({ errorMessage: "게시글 제목의 형식이 일치하지 않습니다."})
@@ -101,14 +96,18 @@ router.delete('/:postId', authMiddleware, async (req, res) => {
         const { userId } = res.locals.user;
         const { postId } = req.params;
         
-        const post = await Posts.findOne({ _id: postId });
+        const post = await Posts.findOne({ where: { postId } });
 
         if (!post) {
             return res.status(404).json({ message: '게시글이 존재하지 않습니다.' });
         }
         
         if (userId === post.userId) {
-            await Posts.deleteOne({ _id: postId })
+            await Posts.destroy({
+                where: {
+                  [Op.and]: [{ postId }, { nickname }]
+                }
+            });
             return res.status(200).json({ message: '게시글을 삭제하였습니다.' });
         } else {
             return res.status(403).json({ errorMessage: '게시글의 삭제 권한이 존재하지 않습니다.' });

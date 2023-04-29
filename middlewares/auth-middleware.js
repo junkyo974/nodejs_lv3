@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const User = require("../schemas/user.js");
+const Users = require("../models");
 
 // 사용자 인증 미들웨어
 module.exports = async (req, res, next) => {
@@ -21,17 +21,22 @@ module.exports = async (req, res, next) => {
 
    // jwt 검증
    try {
-      // 1. authToken이 만료되었는지 확인
-      // 2. authToken이 서버가 발급한 Token이 맞는지 확인
-      const { userId } = jwt.verify(authToken, "customized-secret-key");
-      // 3. authToken 있는 userId에 해당하는 사용자가 실제 DB에 존재하는지 확인
-      const user = await User.findById(userId);
+      const decodedToken = jwt.verify(token, "secret-key");
+      const userId = decodedToken.userId;
+
+      const user = await Users.findOne({ where: { userId }});
+      if(!user) {
+          return res.status(401).json({
+              "message" : "토큰에 해당하는 사용자가 존재하지 않습니다."
+          })
+      }
       res.locals.user = user;
-      next();  // 이 미들웨어 다음으로 보낸다.
-   } catch (error) {
-      console.error(error);
-      res.status(403).json({ errorMessage: "전달된 쿠키에서 오류가 발생하였습니다." });
-      return;
-   }
+      next();
+  } catch (error){
+   console.log(error)
+      return res.status(403).json({
+          message : "전달된 쿠키에서 오류가 발생하였습니다."
+      })
+  }
 
 };

@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const UserSchema = require("../schemas/user.js");
-const authMiddleware = require("../middlewares/auth-middleware.js");
+const {Users} = require("../models");
 const jwt = require('jsonwebtoken');
 
 
@@ -35,8 +34,8 @@ router.post('/signup', async (req, res) => {
 
 
    // 닉네임 DB 중복 검증
-   const isExistuser = await UserSchema.findOne({ nickname });
-   if (isExistuser) {
+   const signupUser = await Users.findOne({ where: { nickname:nickname } });
+   if (signupUser) {
       res.status(412).json({
          errorMessage: "중복된 닉네임입니다."
       });
@@ -52,49 +51,37 @@ router.post('/signup', async (req, res) => {
    };
 
    // 
-   const user = new UserSchema({ nickname, password });
-   await user.save();   // DB에 저장한다.
-
+   const user = await Users.create({ nickname, password });
+   
    return res.status(201).json({ message: "회원 가입에 성공하였습니다." });
 });
 
 
 // 로그인 API
 router.post('/login', async (req, res) => {
-   try {
-      // 바디에서 이메일, 패스워드 불러옴
-      const { nickname, password } = req.body;
+   const { nickname, password } = req.body;
+    try{
+        const user = await Users.findOne({
+            where: { nickname: nickname }
+        });
 
-      // User Tbl 에서 nickname값으로 유저 있는지 찾기 (먼저, 상단에 ../schemas/user.js 불러오는 코드 작성)
-      const user = await UserSchema.findOne({ nickname });
+        // DB에 닉네임이 없거나 사용자가 입력한 비밀번호와 일치하지 않은 경우
+        if(!user || user.password !== password){
+            return res.status(412).json({
+                errorMessage: "닉네임 또는 패스워드를 확인해주세요."
+            })
+        }
 
-      // 1. 이메일에 일치하는 유저가 존재하지 않거나
-      // 2. 유저를 찾았지만, 유저의 비밀번호와 입력한 비밀번호가 다를 때
-      if (!user || user.password !== password) {
-         res.status(412).json({ errorMessage: "닉네임 또는 패스워드를 확인해주세요." });
-         return;  // 다음코드로 진행되지 않도록 막을거다.
-      };
-
-      // JWT 생성 (먼저, 상단에 jsonwebtoken 라이브러리 불러오는 코드 작성)
-      // jwt.sign 통해 생성하며
-      // 좌측에는 실제로 담을 데이터
-      // 우측에는 어떤 비밀키를 이용해서 jwt를 만들건지 데이터
-      const token = jwt.sign({
-         userId: user.userId,
-         nickname: user.nickname
-      }, "customized-secret-key");
-
-      // cookie를 통해 Authorizatin을 전달을 할 건데
-      // Bearer 형태로 token 값을 전달할 거다.
-      // Bearer는 어떤 타입으로 전달을 하는건지 지정하는 것, 왜 사용하는건지 찾아볼 것
-      res.cookie("Authorization", `Bearer ${token}`);
-
-      // status(200) 전달
-      res.status(200).json({ token });
-   } catch (err) {
-      console.log(err);
-      res.status(400).json({ errorMessage: "로그인에 실패하였습니다." });
-   }
+        // jwt 생성
+        const token = jwt.sign({ nickname: user.nickname }, "secret-key");
+        // 쿠키 생성
+        res.cookie("Authorization", `Bearer ${token}`);
+        return res.status(200).json({token});
+    } catch(err) {
+        return res.status(400).json({
+            errorMessage: "로그인에 실패하였습니다."
+        })
+    }
 });
 
 
