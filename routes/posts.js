@@ -12,7 +12,7 @@ router.post('/',authMiddleware, async (req, res) => {
         const { userId, nickname } = res.locals.user;
         const { title, content } = req.body;
         await Posts.create({ 
-            userId,
+            UserId : userId,
             nickname,
             title,
             content });

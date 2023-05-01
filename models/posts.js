@@ -12,6 +12,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      
     }
   }
   Posts.init({
@@ -21,13 +22,15 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true,
       type: Sequelize.INTEGER
     },
-    userId: {
-      type: Sequelize.STRING,
-      allowNull: false
+    UserId: {
+      type: Sequelize.INTEGER,
+      allowNull: false,
+      unique: true
     },
     nickname: {
       type: Sequelize.STRING,
-      allowNull: false
+      allowNull: false,
+      unique : true
     },
     title: {
       type: Sequelize.STRING,

@@ -9,13 +9,15 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      userId: {
-        type: Sequelize.STRING,
-        allowNull: false
+      UserId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        unique : true,
       },
       nickname: {
         type: Sequelize.STRING,
-        allowNull: false
+        allowNull: false,
+        unique : true
       },
       title: {
         type: Sequelize.STRING,
