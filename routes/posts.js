@@ -1,6 +1,6 @@
 const express = require('express');
 const { Op } = require("sequelize");
-const { Posts } = require("../models");
+const { Posts, Likes } = require("../models");
 const router = express.Router();
 const authMiddleware = require("../middlewares/auth-middleware.js");
 
@@ -31,6 +31,7 @@ router.get('/', async (req, res) => {
             attributes: ["postId", "title", "createdAt", "updatedAt"],
             order: [['createdAt', 'DESC']],
           });
+          
         
         const results = posts.sort((a, b) => {
             return b.createdAt.getTime() - a.createdAt.getTime();
@@ -48,12 +49,16 @@ router.get('/', async (req, res) => {
 router.get('/:postId', async (req, res) => {
     try {
         const { postId } = req.params;
+        
         const post = await Posts.findOne({
             attributes: ["postId", "title", "content", "createdAt", "updatedAt"],
             where: { postId }
           });
-        
+        if (!post) {
+            res.status(400).send( {message: "게시글이 없습니다."})
+        } else {
         res.json({ data: post });
+        }
     } catch (err) {
         console.error(err);
         res.status(400).send({ message: '게시글 조회에 실패하였습니다.' });
@@ -76,9 +81,12 @@ router.put('/:postId', authMiddleware, async (req, res) => {
         if (content.length===0) {
             return res.status(412).json({ errorMessage: "게시글 내용의 형식이 일치하지 않습니다."})
         }
-        if (userId === post.userId) {
+        if (userId === post.UserId) {
             const date = new Date();
-            await Posts.updateOne({ _id: postId }, { $set: { title: title, content: content, updatedAt: date } })
+            await Posts.update(
+                { title: title, content: content, updatedAt: date },
+                {where: {userId : userId}} );
+
             return res.status(200).json({ message: '게시글을 수정하였습니다.' });
         } else {
             return res.status(403).json({ errorMessage: '게시글 수정의 권한이 존재하지 않습니다.' });
