@@ -1,7 +1,8 @@
 const express = require('express');
 const { Op } = require("sequelize");
-const { Posts, Likes } = require("../models");
+const { Posts,Users, Likes } = require("../models");
 const router = express.Router();
+const sequelize = require('sequelize');
 const authMiddleware = require("../middlewares/auth-middleware.js");
 
 
@@ -28,8 +29,20 @@ router.post('/',authMiddleware, async (req, res) => {
 router.get('/', async (req, res) => {
     try {
         const posts = await Posts.findAll({
-            attributes: ["postId", "title", "createdAt", "updatedAt"],
+            attributes: [
+                "postId",
+                "title",
+                [sequelize.fn('COUNT', sequelize.col('LikesId')), 'LikesCount'],      
+                "createdAt",
+                "updatedAt"],
             order: [['createdAt', 'DESC']],
+            include: [
+                {
+                  model: Likes,
+                  attributes: [],
+                  aduplicating: false
+                }
+              ]
           });
           
         
@@ -51,8 +64,20 @@ router.get('/:postId', async (req, res) => {
         const { postId } = req.params;
         
         const post = await Posts.findOne({
-            attributes: ["postId", "title", "content", "createdAt", "updatedAt"],
-            where: { postId }
+            attributes: [
+                "postId",
+                "title",
+                [sequelize.fn('COUNT', sequelize.col('LikesId')), 'LikesCount'],      
+                "createdAt",
+                "updatedAt"],
+            where: { postId },
+            include: [
+                {
+                  model: Likes,
+                  attributes: [],
+                  aduplicating: false
+                }
+              ]
           });
         if (!post) {
             res.status(400).send( {message: "게시글이 없습니다."})
