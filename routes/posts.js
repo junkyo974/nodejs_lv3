@@ -36,13 +36,7 @@ router.get('/', async (req, res) => {
                 "createdAt",
                 "updatedAt"],
             order: [['createdAt', 'DESC']],
-            include: [
-                {
-                  model: Likes,
-                  attributes: [],
-                  aduplicating: false
-                }
-              ]
+            
           });
           
         
@@ -71,13 +65,7 @@ router.get('/:postId', async (req, res) => {
                 "createdAt",
                 "updatedAt"],
             where: { postId },
-            include: [
-                {
-                  model: Likes,
-                  attributes: [],
-                  aduplicating: false
-                }
-              ]
+            
           });
         if (!post) {
             res.status(400).send( {message: "게시글이 없습니다."})
